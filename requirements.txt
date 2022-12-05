@@ -1,0 +1,4 @@
+aiohttp==3.8.3
+aiosqlite==0.17.0
+blacksheep==1.2.8
+uvicorn==0.20.0
