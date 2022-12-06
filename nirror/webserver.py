@@ -1,4 +1,5 @@
-# Copyright 2022 I. Tam (Ka-yiu Tam) <tamik@duck.com>,
+# Copyright 2022 I. Tam (Ka-yiu Tam) <tamik@duck.com>
+#
 # This file is part of Nirror.
 # Nirror is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free
@@ -12,6 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with Nirror. If not, see <https://www.gnu.org/licenses/>.
+
 import os
 import asyncio
 import logging
@@ -19,12 +21,13 @@ import json
 
 import uvicorn
 import aiohttp
-from blacksheep import Application, file
+from blacksheep import Application, file, not_found
 from nirlibs import crud, fetch
 
 app = Application()
+
 config = json.load(
-    open(os.path.abspath(f'{__file__}/../config.json'), encoding='utf-8'))
+    open(os.path.abspath(f'{__file__}/../../userdata/config.json'), encoding='utf-8'))
 
 
 async def download_all_bin(session, channels=config['channel']):
@@ -37,20 +40,23 @@ async def download_all_bin(session, channels=config['channel']):
         pass
 
 
-async def mirror_upstream(restarted=False, restart_minutes=15, recycle_period=90):
+async def mirror_upstream(restart_minutes=15, recycle_period=90):
     """Start Syncing Upstream."""
-    if restarted:
+    logging.basicConfig(level=logging.INFO)
+    await crud.initialise()
+    while True:
         async with aiohttp.ClientSession() as session:
             await crud.recycle_unused(recycle_period)
             await download_all_bin(session)
             await asyncio.sleep(restart_minutes * 60)
-            return await mirror_upstream(True, restart_minutes, recycle_period)
-    logging.basicConfig(level=logging.INFO)
-    return await mirror_upstream(True, restart_minutes, recycle_period)
+        await asyncio.sleep(restart_minutes * 60)
 
 
 async def configure_background_tasks(app):
-    asyncio.get_event_loop().create_task(mirror_upstream())
+    asyncio.get_event_loop().create_task(
+        mirror_upstream(
+            restart_minutes=config['refresh_interval_mins'],
+            recycle_period=config['remove_binary_days']))
 
 
 @app.route("/nar/<narname>")
@@ -63,13 +69,28 @@ async def route_narbin(narname):
 
 @app.route("/<narinfo>.narinfo")
 async def route_narinfo(narinfo):
-    return file(
-        value=await crud.read_narinfo(narinfo),
-        content_type="text/x-nix-narinfo"
-    )
+    try:
+        return file(
+            value=await crud.read_narinfo(narinfo),
+            content_type="text/x-nix-narinfo"
+        )
+    except:
+        not_found()
+
+
+@app.route("/")
+async def route_index():
+    return (" _______________ \n"
+            "( Nirror works! )\n"
+            " --------------- \n"
+            "        o   ^__^\n"
+            "         o  (==)\_______\n"
+            "            (__)\       )\/\\\n"
+            "                ||----w |\n"
+            "                ||     ||\n")
+
 
 if __name__ == '__main__':
-
     app.on_start += configure_background_tasks
     uvicorn.run(
         app=f"{__name__}:app",

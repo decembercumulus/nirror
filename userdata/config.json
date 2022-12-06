@@ -1,0 +1,6 @@
+{
+    "port": 8080,
+    "channel": ["nixpkgs-unstable"],
+    "refresh_interval_mins": 15,
+    "remove_binary_days": 90
+}

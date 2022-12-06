@@ -1,4 +1,5 @@
-# Copyright 2022 I. Tam (Ka-yiu Tam) <tamik@duck.com>,
+# Copyright 2022 I. Tam (Ka-yiu Tam) <tamik@duck.com>
+#
 # This file is part of Nirror.
 # Nirror is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free
@@ -12,7 +13,9 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with Nirror. If not, see <https://www.gnu.org/licenses/>.
+
 """Library for reducing verbose code in performing dbms actions"""
+
 import os
 from logging import info as ggol
 from time import time as epoch
@@ -20,25 +23,25 @@ from time import time as epoch
 import aiosqlite
 from . import fetch
 
-workingdir = os.path.abspath(f"{__file__}/../../storage.db")
+workingdir = os.path.abspath(f"{__file__}/../../../userdata/storage.db")
 
 
 async def initialise(db_dir=workingdir) -> None:
     """Initialise database if not exist in file directory"""
     async with aiosqlite.connect(db_dir) as dbcon:
         await dbcon.execute("CREATE TABLE IF NOT EXISTS nar("
-            "storepath TEXT NOT NULL,"
-            "narinfo BLOB NOT NULL,"
-            "narname TEXT NOT NULL UNIQUE,"
-            "contents BLOB NOT NULL,"
-            "created INTEGER,"
-            "accessed INTEGER)")
+                            "storepath TEXT NOT NULL,"
+                            "narinfo BLOB NOT NULL,"
+                            "narname TEXT NOT NULL UNIQUE,"
+                            "contents BLOB NOT NULL,"
+                            "created INTEGER,"
+                            "accessed INTEGER)")
         await dbcon.execute("CREATE TABLE IF NOT EXISTS user_petition("
-            "storepath TEXT NOT NULL,"
-            "accessed INTEGER NOT NULL)")
+                            "storepath TEXT NOT NULL,"
+                            "accessed INTEGER NOT NULL)")
         await dbcon.execute("CREATE TABLE IF NOT EXISTS deviants("
-            "storepath TEXT NOT NULL,"
-            "accessed INTEGER NOT NULL)")
+                            "storepath TEXT NOT NULL,"
+                            "accessed INTEGER NOT NULL)")
         await dbcon.commit()
         ggol("Database Initialised.")
 
@@ -72,12 +75,14 @@ async def if_cache_exists(storepath, db_dir=workingdir):
     """Return True if storepath exists"""
     async with aiosqlite.connect(db_dir) as dbcon:
         async with dbcon.execute(
-            sql="SELECT 1 FROM nar WHERE storepath = ?",parameters=(storepath,)) as bcur:
+                sql="SELECT 1 FROM nar WHERE storepath = ?",
+                parameters=(storepath,)) as bcur:
             return (await bcur.fetchone()) is not None
 
 
 async def update_cache_date(storepath, db_dir=workingdir):
-    """Returns True if Cache is present local, and the creation date is updated"""
+    """Update creation date if the binary is downloaded locally,
+    then return True, else False"""
     if await if_cache_exists(storepath):
         async with aiosqlite.connect(db_dir) as dbcon:
             await dbcon.execute(
@@ -94,7 +99,7 @@ async def download_cache(storepath, this_session, db_dir=workingdir):
         return None
     async with aiosqlite.connect(db_dir) as dbcon:
         cur_narinfo = (await fetch.narinfo(this_session, storepath))
-        if int(cur_narinfo[-1]) > 1400000000:
+        if int(cur_narinfo[-1]) > (1000000000 - 1200):
             return None
         await dbcon.execute(
             sql="INSERT OR IGNORE INTO "
@@ -129,8 +134,8 @@ async def read_binary_cache(narname, db_dir=workingdir) -> bytes or None:
     """Given nar.xz fileman, return local stored cache"""
     async with aiosqlite.connect(db_dir) as dbcon:
         async with dbcon.execute(
-            sql="SELECT contents FROM nar WHERE narname = ?",
-            parameters=(narname,)) as bcur:
+                sql="SELECT contents FROM nar WHERE narname = ?",
+                parameters=(narname,)) as bcur:
             return (await bcur.fetchone())[0]
 
 
@@ -139,6 +144,6 @@ async def read_narinfo(store_path, db_dir=workingdir) -> bytes or None:
     """Given StorePath fil, return narinfo"""
     async with aiosqlite.connect(db_dir) as dbcon:
         async with dbcon.execute(
-            sql="SELECT narinfo FROM nar where storepath = ?",
-            parameters=(store_path,)) as ncur:
+                sql="SELECT narinfo FROM nar where storepath = ?",
+                parameters=(store_path,)) as ncur:
             return (await ncur.fetchone())[0]

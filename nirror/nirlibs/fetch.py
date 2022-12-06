@@ -1,4 +1,5 @@
-# Copyright 2022 I. Tam (Ka-yiu Tam) <tamik@duck.com>,
+# Copyright 2022 I. Tam (Ka-yiu Tam) <tamik@duck.com>
+#
 # This file is part of Nirror.
 # Nirror is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free
@@ -12,6 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with Nirror. If not, see <https://www.gnu.org/licenses/>.
+
 """Dumb HTTP GET library returns HTTP contents as vars given by passed uri"""
 import logging
 import lzma
