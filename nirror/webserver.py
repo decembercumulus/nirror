@@ -22,7 +22,7 @@ import json
 import uvicorn
 import aiohttp
 from blacksheep import Application, file, not_found
-from nirlibs import crud, fetch
+from nirlibs import crud, fetch, cowsay
 
 app = Application()
 
@@ -78,16 +78,17 @@ async def route_narinfo(narinfo):
         not_found()
 
 
+@app.route("/nix-cache-info")
+async def route_priority():
+    return file(
+        value=b'StoreDir: /nix/store\nWantMassQuery: 1\nPriority: %i\n' % config['priority'],
+        content_type="text/x-nix-cache-info"
+    )
+
+
 @app.route("/")
 async def route_index():
-    return (" _______________ \n"
-            "( Nirror works! )\n"
-            " --------------- \n"
-            "        o   ^__^\n"
-            "         o  (==)\_______\n"
-            "            (__)\       )\/\\\n"
-            "                ||----w |\n"
-            "                ||     ||\n")
+    return cowsay.cowsay()
 
 
 if __name__ == '__main__':

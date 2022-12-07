@@ -1,3 +1,5 @@
-__all__ = ['crud.py', 'fetch.py']
+"""Placeholder"""
 
-from nirlibs import crud, fetch
+from . import crud
+from . import fetch
+from . import cowsay
