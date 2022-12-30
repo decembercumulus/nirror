@@ -9,7 +9,7 @@
 # Software Foundation, either version 3 of the License, or (at your option)
 # any later version
 #
-# Nirror is distributed in the hope that it will be u Ka-yiu Tamseful, but
+# Nirror is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
 # License for more details
@@ -87,6 +87,8 @@ async def server_loop():
     configs = json.load(open(cfg_dir))
     while True:
         await database.dump_old(configs["remove_binary_days"])
-        await download.get_nix_binary(
-            (await get_new_pkgs(configs['channel']))[0:114])
-        await asyncio.sleep(configs["refresh_interval_mins"] * 60)
+        to_be_downloaded = await get_new_pkgs(configs['channel'])
+        if len(to_be_downloaded):
+            await download.get_nix_binary(to_be_downloaded[0:114])
+        else:
+            await asyncio.sleep(configs["refresh_interval_mins"] * 60)

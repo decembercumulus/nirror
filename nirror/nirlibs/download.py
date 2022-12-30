@@ -10,7 +10,7 @@ Library for downloading stuffs asynchronously"""
 # Software Foundation, either version 3 of the License, or (at your option)
 # any later version
 #
-# Nirror is distributed in the hope that it will be u Ka-yiu Tamseful, but
+# Nirror is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
 # License for more details
@@ -50,6 +50,18 @@ def retry(func_name):
     return wrapper
 
 
+def skip(func_name):
+    """skip task if error"""
+    # pylint: disable=broad-except
+    async def wrapper(*arg, **kwargs):
+        try:
+            return await func_name(*arg, **kwargs)
+        except Exception:
+            print(traceback.format_exc())
+            return b""
+    return wrapper
+
+
 async def socket_download(session, url) -> bytes:
     """download items from the given url
     url ==> downloaded bytes from the url"""
@@ -79,6 +91,7 @@ async def read_nar_from_disk(filename):
         return await file.read()
 
 
+@retry
 async def get_lastest_packages(channel: str) -> list:
     """Channel ==> list of nix storepaths"""
     channel_url = f"https://channels.nixos.org/{channel}/store-paths.xz"
@@ -92,6 +105,7 @@ async def get_lastest_packages(channel: str) -> list:
         return []
 
 
+@retry
 async def get_nixcache_narinfo(storepaths: list) -> dict:
     """
     list of storepath ==> dict of {storepath: narinfo in bytes, ...}"""
@@ -104,11 +118,11 @@ async def get_nixcache_narinfo(storepaths: list) -> dict:
         return dict(zip(storepaths, await asyncio.gather(*_tasks)))
 
 
+@skip
 async def get_nix_binary(storepaths: list):
     """storepaths ==> nar/{files}"""
     _tasks = []
-    async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=900)) as session:
+    async with aiohttp.ClientSession() as session:
         temp_storepaths = await get_nixcache_narinfo(storepaths)
         for key_storepath, value_narinfo in temp_storepaths.items():
             _tasks.append(asyncio.ensure_future(
@@ -121,6 +135,7 @@ async def get_nix_binary(storepaths: list):
     return True
 
 
+@retry
 async def check_upstrean_exist(storepath: str):
     try:
         url = f"https://cache.nixos.org/{storepath}.narinfo"
